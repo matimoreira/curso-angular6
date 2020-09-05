@@ -1,4 +1,4 @@
-import { Component, OnInit} from '@angular/core';
+import { Component, OnInit, Output, EventEmitter} from '@angular/core';
 import { DestinoViaje } from './../models/destino-viaje.models';
 
 @Component({
@@ -7,22 +7,27 @@ import { DestinoViaje } from './../models/destino-viaje.models';
   styleUrls: ['./lista-destinos.component.css']
 })
 export class ListaDestinosComponent implements OnInit {
+	@Output() onItemAdded: EventEmitter<DestinoViaje>
 	destinos: DestinoViaje[];
 	constructor() {
 
 		this.destinos = [];
 	}
 
-  	agregar(_nombre: string, _url: string): boolean	{
+  	agregado(d: DestinoViaje){
 
-		console.log(new DestinoViaje(_nombre, _url));  	
-		this.destinos.push(new DestinoViaje(_nombre, _url));
+		console.log(d);  	
+		//this.destinos.push(new DestinoViaje(_nombre, _url));
 		// console.log(this.destinos[0]);
-		return false;
   	}
 
   	ngOnInit(): void {
 
-  	}
+	}
+	elegido(d: DestinoViaje){
+		this.destinos.forEach(function(x){x.setSelected(false);});
+		d.setSelected(true);
+	}  
+	
 
 }
