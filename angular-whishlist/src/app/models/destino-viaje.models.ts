@@ -3,7 +3,7 @@ export class DestinoViaje {
 	imageUrl: string;
 	public servicios: string[];
 	private selected: boolean; 
-	constructor(public n: string, public i: string) { 
+	constructor(public n: string, public i: string, public votes: number = 0) { 
 		this.nombre = n;
 		this.imageUrl = i;
 		this.servicios = ['Pileta', 'Desayuno'];
@@ -13,5 +13,13 @@ export class DestinoViaje {
 	}
 	setSelected( s: boolean){
 		this.selected = s;
+	}
+
+	voteUp(){
+		this.votes++;
+	}
+
+	voteDown(){
+		this.votes--;
 	}
 }

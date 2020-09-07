@@ -1,7 +1,9 @@
 import { Component, OnInit, Output, EventEmitter } from '@angular/core';
 import { DestinoViaje } from '../models/destino-viaje.models';
-import { FormBuilder, FormGroup, Validators, FormControl, ValidatorFn } from '@angular/forms';
-
+import { FormGroup, FormBuilder, Validators, FormControl, ValidatorFn } from '@angular/forms';
+import { fromEvent } from 'rxjs';
+import { map, filter, debounce, distinctUntilChanged, switchMap, debounceTime } from 'rxjs/operators';
+import { ajax, AjaxResponse } from 'rxjs/ajax';
 @Component({
   selector: 'app-form-destino-viaje',
   templateUrl: './form-destino-viaje.component.html',
@@ -11,6 +13,8 @@ export class FormDestinoViajeComponent implements OnInit {
   @Output() onItemAdded: EventEmitter<DestinoViaje>;
   fg: FormGroup;
   minLongitud = 3;
+  searhResults: string[];
+
   constructor(fb: FormBuilder) {
     this.onItemAdded = new EventEmitter();
     this.fg = fb.group({
@@ -21,16 +25,29 @@ export class FormDestinoViajeComponent implements OnInit {
       ])],
       url: ['', Validators.required]
     })
+
     this.fg.valueChanges.subscribe((form: any) =>{
       console.log("cambio el formulario: " + form);
     });
    }
 
   ngOnInit(): void {
+    let elemNombre = <HTMLInputElement>document.getElementById('nombre');
+    fromEvent(elemNombre, 'input')
+      .pipe(
+        map((e:KeyboardEvent) => (e.target as HTMLInputElement).value),
+        filter( text => text.length > 2),
+        debounceTime(200),
+        distinctUntilChanged(),
+        switchMap(() => ajax('assets/datos.json'))
+      ).subscribe(AjaxResponse => {
+        this.searhResults = AjaxResponse.response;
+        console.log(AjaxResponse.response);
+      }); 
   }
 
   guardar(nombre: string, url: string): boolean{
-    let d = new DestinoViaje(nombre, url);
+    const d = new DestinoViaje(nombre, url);
     this.onItemAdded.emit(d);
     return false;
   }
