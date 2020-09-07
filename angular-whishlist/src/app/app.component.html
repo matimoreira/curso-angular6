@@ -1,6 +1,20 @@
 <div class="container content">
+  <div class="page-header">
+    <div class="container">
+      <h1>Ruteo Simple</h1>
+      <div class="navLinks">
+        <a [routerLink]="['/home']">Home</a>
+        <a [routerLink]="['/destino']">Destino</a>
+      </div>
+    </div>
+  </div>
   <div class="row">
     <h1 class="display-4 p-4 m-auto text-capitalize">{{ title }}</h1>
   </div>
-  <app-lista-destinos class="row"></app-lista-destinos> 
+  <router-outlet></router-outlet>
+  <!-- <app-lista-destinos class="row"></app-lista-destinos>  -->
 </div>
+
+<hr class="mb-5">
+
+Fecha: {{time | async}}
