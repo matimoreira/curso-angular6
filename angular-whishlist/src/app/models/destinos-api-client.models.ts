@@ -16,4 +16,6 @@ export class DestinoApiClient {
     elegir(d: DestinoViaje){
         this.store.dispatch(new ElegidoFavoritoAction(d));
     }
+
+    
 }
