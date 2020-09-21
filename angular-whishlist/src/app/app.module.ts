@@ -1,10 +1,12 @@
 import { BrowserModule } from '@angular/platform-browser';
-import { NgModule } from '@angular/core';
+import { APP_INITIALIZER, inject, Injectable, InjectionToken, NgModule } from '@angular/core';
 import { RouterModule, Routes} from '@angular/router';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { StoreModule as NgRxStoreModule, ActionReducerMap} from '@ngrx/store';
+import { StoreModule as NgRxStoreModule, ActionReducerMap, Store} from '@ngrx/store';
 import { EffectsModule } from '@ngrx/effects';
 import { StoreDevtoolsModule } from '@ngrx/store-devtools';
+import { HttpClient, HttpClientModule, HttpHeaders, HttpRequest} from '@angular/common/http'; 
+import { Dexie} from 'dexie';
 
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
@@ -16,7 +18,7 @@ import {
   DestinosViajesState, 
   reducerDestinosViajes, 
   initializeDestinoViajeState,
-  DestinosViajesEffects
+  DestinosViajesEffects, InitMyDataAction
 } from './models/destinos-viajes-states.models';  
 //import { DestinoApiClient } from './models/destinos-api-client.models';
 import { LoginComponent } from './components/login/login/login.component';
@@ -28,7 +30,19 @@ import { VuelosMainComponentComponent } from './components/vuelos/vuelos-main-co
 import { VuelosMasInfoComponentComponent } from './components/vuelos/vuelos-mas-info-component/vuelos-mas-info-component.component';
 import { VuelosDetalleComponent } from './components/vuelos/vuelos-detalle-component/vuelos-detalle-component.component';
 import { ReservasModule } from './reservas/reservas.module';
+import { DestinoViaje } from './models/destino-viaje.models';
 
+// app config
+export interface AppConfig {
+  apiEndPoint: String;
+}
+const APP_CONFIG_VALUE: AppConfig = {
+  apiEndPoint: 'http://localhost:3000'
+};
+export const APP_CONFIG = new InjectionToken<AppConfig>('app.config');
+// fin appconfig
+
+// innit routing
 export const childrenRoutesVuelos: Routes = [
   { path: '', redirectTo: 'main', pathMatch: 'full'},
   { path: 'main', component: VuelosMainComponentComponent },
@@ -53,6 +67,7 @@ const routes: Routes = [
     children: childrenRoutesVuelos
   } 
 ];
+//end routing
 
 // redux init
 export interface AppState {
@@ -67,6 +82,39 @@ let reducersInitialState = {
   destinos: initializeDestinoViajeState()
 }
 // redux fin init
+
+// app innit 
+export function init_app( appLoadService: AppLoadService): () => Promise<any> {
+  return () => appLoadService.initializeDestinoViajesState();
+}
+@Injectable()
+class AppLoadService {
+  constructor (private store: Store<AppState>, private http: HttpClient) { }
+  async initializeDestinoViajesState(): Promise<any> {
+    const headers: HttpHeaders = new HttpHeaders({'X-API-TOKEN': 'token-seguridad'});
+    const req = new HttpRequest('GET', APP_CONFIG_VALUE.apiEndPoint + '/my', { headers: headers });
+    const response: any = await this.http.request(req).toPromise();
+    this.store.dispatch(new InitMyDataAction(response.body));
+  }
+}
+// app end
+
+// dexie db
+@Injectable({
+  providedIn: 'root'
+})
+
+export class MyDatabase extends Dexie {
+  destinos: Dexie.Table<DestinoViaje, number>;
+  constructor(){
+    super('MyDatabase');
+    this.version(1).stores({
+      destinos: '++id, nombre, imageUrl',
+    });
+  }
+}
+export const db = new MyDatabase(); 
+// dexie db end
 
 @NgModule({
   declarations: [
@@ -86,6 +134,7 @@ let reducersInitialState = {
     BrowserModule,
     FormsModule,
     ReactiveFormsModule,
+    HttpClientModule,
       RouterModule.forRoot(routes),
     NgRxStoreModule.forRoot(reducers, { initialState: reducersInitialState }),
     EffectsModule.forRoot([DestinosViajesEffects]),
@@ -94,7 +143,10 @@ let reducersInitialState = {
   ],
   providers: [ 
     //DestinoApiClient, AuthService, UsuarioLogueadoGuard
-    AuthService, UsuarioLogueadoGuard
+    AuthService, UsuarioLogueadoGuard, 
+    { provide: APP_CONFIG, useValue: APP_CONFIG_VALUE },
+    AppLoadService, { provide: APP_INITIALIZER, useFactory: init_app, deps: [AppLoadService], multi: true},
+    MyDatabase
   ],
   bootstrap: [AppComponent]
 })
